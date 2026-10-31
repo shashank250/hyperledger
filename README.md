@@ -4,7 +4,7 @@ Steady is a self-hosted personal budgeting and planning app. It includes a Node.
 
 The account registration form defaults the account name to **Shashank Kumar**. Change it before registration if the account owner is someone else.
 
-The sign-in screen includes **Explore the sample Indian household**, which opens an illustrative INR workspace with four months of synthetic activity, common household commitments, recurring services, and two dated goals. It is not connected to a bank account. Signing out removes that demo workspace. The overview can plan against week, month, or year horizons. Weekly plans apportion monthly profile figures across seven days; annual plans use 12× profile estimates and show how much transaction history is available.
+Visitors sign in to an existing account or create a private workspace. The public sample Indian household and its seeded transactions have been removed. The overview can plan against week, month, or year horizons. Weekly plans apportion monthly profile figures across seven days; annual plans use 12× profile estimates and show how much transaction history is available.
 
 ## Run it locally
 

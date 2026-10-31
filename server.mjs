@@ -19,11 +19,12 @@ CREATE TABLE IF NOT EXISTS rules(user_id TEXT NOT NULL REFERENCES users(id) ON D
 CREATE TABLE IF NOT EXISTS goals(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,name TEXT NOT NULL,target REAL NOT NULL,saved REAL NOT NULL,due_date TEXT NOT NULL,monthly REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS settings(user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,plan TEXT NOT NULL DEFAULT 'free',theme TEXT NOT NULL DEFAULT 'light',budgets TEXT NOT NULL DEFAULT '{}');`);
 db.exec(`CREATE TABLE IF NOT EXISTS usage_events(user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,kind TEXT NOT NULL,period TEXT NOT NULL,count INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(user_id,kind,period));`);
+// Remove legacy synthetic sample accounts during upgrade.
+db.prepare("DELETE FROM users WHERE email LIKE '%@demo.steady.invalid'").run();
 
 const sessions = new Map();
 const limits = new Map();
 const authAttempts = new Map();
-const demoAttempts = new Map();
 const scrypt = promisify(crypto.scrypt);
 const plans = { free: { name: 'Steady', price: 0, goals: 2, history: 3, scenarios: 2, transactions: 100, pdf: true }, plus: { name: 'Steady Plus', price: 99, goals: 8, history: 24, scenarios: 30, transactions: 2500, pdf: true }, complete: { name: 'Steady Complete', price: 199, goals: 25, history: 60, scenarios: 100, transactions: 10000, pdf: true } };
 const categories = ['Housing','Utilities','Groceries','Dining','Transport','Health','Education','Shopping','Subscriptions','Income','Transfer','Other'];
@@ -111,34 +112,6 @@ async function handle(req,res){
   if(req.headers.origin&&req.headers.host&&!req.headers.origin.endsWith('://'+req.headers.host))return reply(res,403,{error:'Cross-origin request refused.'});
   try{
     if(req.method==='GET'&&u.pathname==='/api/health')return reply(res,200,{ok:true,service:'steady',version:'1.0.0'});
-    if(req.method==='POST'&&u.pathname==='/api/demo'){
-      const ip=req.socket.remoteAddress||'unknown',now=Date.now(),attempts=(demoAttempts.get(ip)||[]).filter(t=>now-t<60*60*1000);
-      if(attempts.length>=8)return reply(res,429,{error:'The sample workspace has been opened several times from this network. Please try again later.'});
-      attempts.push(now);demoAttempts.set(ip,attempts);
-      const id=crypto.randomUUID(),email=`sample-${id}@demo.steady.invalid`,salt=crypto.randomBytes(16).toString('hex'),hash=crypto.randomBytes(64).toString('hex'),created=new Date().toISOString();
-      db.prepare('INSERT INTO users VALUES(?,?,?,?,?,?)').run(id,'Shashank Kumar',email,hash,salt,created);
-      db.prepare('INSERT INTO profiles VALUES(?,?)').run(id,JSON.stringify({monthlyIncome:72000,fixedCosts:30800,monthlyRent:18000,essentialBudget:22500,emergencyFund:115000,discretionaryBudget:12000,goalsContext:'Illustrative Indian household balancing rent, school fees, groceries, commuting, support for family, an emergency cushion and a family milestone.',currency:'INR'}));
-      db.prepare('INSERT INTO settings(user_id,budgets) VALUES(?,?)').run(id,JSON.stringify({Housing:19500,Utilities:5200,Groceries:12500,Dining:3500,Transport:3000,Health:1800,Education:4500,Shopping:3000,Subscriptions:700,Other:3500}));
-      const goals=db.prepare('INSERT INTO goals VALUES(?,?,?,?,?,?,?)');
-      const dateIn=(monthsAgo,day)=>{const d=new Date(),m=new Date(d.getFullYear(),d.getMonth()-monthsAgo,1),last=new Date(m.getFullYear(),m.getMonth()+1,0).getDate(),safeDay=Math.min(day,last,monthsAgo===0?Math.max(1,d.getDate()-1):last);return `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,'0')}-${String(safeDay).padStart(2,'0')}`};
-      const future=(months)=>{const d=new Date();d.setMonth(d.getMonth()+months);return d.toISOString().slice(0,10)};
-      goals.run(crypto.randomUUID(),id,'Emergency cushion',250000,115000,future(12),4500);
-      goals.run(crypto.randomUUID(),id,'Family milestone fund',45000,12000,future(9),1500);
-      const rows=[
-        ['Salary credit · sample household',72000,'Income',1],['House rent',-18000,'Housing',3],['Apartment maintenance',-1500,'Housing',4],['Electricity bill',-1800,'Utilities',6],['Mobile recharge',-499,'Utilities',8],['Home broadband',-799,'Utilities',8],['LPG cylinder',-1200,'Utilities',9],['Family support transfer',-3000,'Transfer',10],['School fees',-4000,'Education',11],['Reliance Smart groceries',-4500,'Groceries',12],['Local market groceries',-2800,'Groceries',13],['Dairy and produce',-1250,'Groceries',14],['Swiggy order',-850,'Dining',15],['Local restaurant',-1050,'Dining',16],['City bus pass',-1200,'Transport',17],['Auto rickshaw',-550,'Transport',18],['Pharmacy purchase',-450,'Health',19],['Netflix subscription',-149,'Subscriptions',20],['Spotify subscription',-119,'Subscriptions',21],['Clothing and footwear',-1200,'Shopping',23],['Household purchase',-1450,'Shopping',24],['Family tea shop',-320,'Dining',26]
-      ];
-      const variableMerchants=new Set(['Reliance Smart groceries','Local market groceries','Dairy and produce','Swiggy order','Local restaurant','Auto rickshaw','Pharmacy purchase','Clothing and footwear','Household purchase','Family tea shop']);
-      const insert=db.prepare('INSERT INTO transactions(id,user_id,tx_date,merchant,merchant_key,amount,category,account,source,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)');
-      for(let monthsAgo=3;monthsAgo>=0;monthsAgo--)for(const row of rows){
-        const [merchant,base,category,day]=row;let amount=base;const txDate=dateIn(monthsAgo,day),demoMerchant=variableMerchants.has(merchant)?`${merchant} · ${txDate.slice(0,7)}`:merchant;
-        if(merchant==='Netflix subscription'&&monthsAgo===0)amount=-179;
-        if(merchant==='Reliance Smart groceries'&&monthsAgo===1)amount=-5200;
-        if(merchant==='Swiggy order'&&monthsAgo===0)amount=-1250;
-        insert.run(crypto.randomUUID(),id,txDate,demoMerchant,merchantKey(demoMerchant),amount,category,'Sample Indian household','demo',created);
-      }
-      const token=crypto.randomBytes(32).toString('hex');sessions.set(token,id);
-      return reply(res,200,{ok:true,name:'Shashank Kumar',demo:true},{'set-cookie':cookie(token,60*60*4)});
-    }
     if(req.method==='POST'&&u.pathname==='/api/auth/register'){
       const b=await json(req),name=safeName(b.name||'Shashank Kumar'),email=String(b.email||'').trim().toLowerCase(),password=String(b.password||'');
       if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||password.length<10||password.length>200)return reply(res,400,{error:'Enter a valid email and password with at least 10 characters.'});
