@@ -104,13 +104,14 @@ async function handle(req,res){
       const rows=[
         ['Salary credit · sample employer',88500,'Income',1],['Home rent · Bengaluru',-24000,'Housing',3],['Apartment maintenance',-2200,'Housing',4],['BESCOM electricity',-1650,'Utilities',6],['Airtel mobile',-749,'Utilities',8],['BigBasket groceries',-5300,'Groceries',9],['D-Mart groceries',-2100,'Groceries',10],['Swiggy order',-1200,'Dining',12],['Zomato order',-980,'Dining',13],['Namma Metro',-1100,'Transport',15],['Ola ride',-750,'Transport',16],['Apollo Pharmacy',-650,'Health',18],['Netflix subscription',-199,'Subscriptions',20],['Spotify subscription',-119,'Subscriptions',21],['Myntra purchase',-1400,'Shopping',23],['Amazon household',-2250,'Shopping',25],['Family education fee',-4000,'Other',27],['Cafe coffee',-340,'Dining',28]
       ];
+      const variableMerchants=new Set(['BigBasket groceries','D-Mart groceries','Swiggy order','Zomato order','Ola ride','Apollo Pharmacy','Myntra purchase','Amazon household','Cafe coffee']);
       const insert=db.prepare('INSERT INTO transactions(id,user_id,tx_date,merchant,merchant_key,amount,category,account,source,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)');
-      for(let monthsAgo=3;monthsAgo>=0;monthsAgo--)for(const [index,row] of rows.entries()){
-        const [merchant,base,category,day]=row;let amount=base;
+      for(let monthsAgo=3;monthsAgo>=0;monthsAgo--)for(const row of rows){
+        const [merchant,base,category,day]=row;let amount=base;const txDate=dateIn(monthsAgo,day),demoMerchant=variableMerchants.has(merchant)?`${merchant} · ${txDate.slice(0,7)}`:merchant;
         if(merchant==='Netflix subscription'&&monthsAgo===0)amount=-249;
         if(merchant==='BigBasket groceries'&&monthsAgo===1)amount=-6100;
         if(merchant==='Swiggy order'&&monthsAgo===0)amount=-1850;
-        insert.run(crypto.randomUUID(),id,dateIn(monthsAgo,day),merchant,merchantKey(merchant),amount,category,'Sample Bengaluru household','demo',created);
+        insert.run(crypto.randomUUID(),id,txDate,demoMerchant,merchantKey(demoMerchant),amount,category,'Sample Bengaluru household','demo',created);
       }
       const token=crypto.randomBytes(32).toString('hex');sessions.set(token,id);
       return reply(res,200,{ok:true,name:'Shashank Kumar',demo:true},{'set-cookie':cookie(token,60*60*4)});
