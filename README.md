@@ -4,6 +4,8 @@ Steady is a self-hosted personal budgeting and planning app. It includes a Node.
 
 The account registration form defaults the account name to **Shashank Kumar**. Change it before registration if the account owner is someone else.
 
+The sign-in screen includes **Explore the sample Bengaluru household**, which opens an illustrative INR workspace with four months of sample activity, common household commitments, recurring services, and two savings goals. It is synthetic data; it is not connected to a bank account. Signing out removes that demo workspace.
+
 ## Run it locally
 
 Requirements: Node.js 24 or later, Python 3.10 or later, and PyMuPDF for PDF imports.
@@ -22,7 +24,7 @@ Build from this directory with `docker build -t steady .`, then run it with port
 
 ### Render Blueprint
 
-`render.yaml` defines a Docker web service, `/api/health` check, and a 1 GB persistent disk mounted at `/data`. Add this app folder to a Git repository, connect that repository to Render, and create a Blueprint instance. Select a data region that fits your needs before creating the service. This configuration uses a paid compute plan because the free service filesystem does not preserve the SQLite database. Confirm the hosting cost and account details in Render before deploying.
+`render.yaml` defines a free Docker web service in Singapore with a `/api/health` check. Free service filesystems are temporary, so user and sample data may be lost when the service restarts or redeploys. The app deliberately does not configure paid compute or paid storage.
 
 ## What the financial model does
 
@@ -66,4 +68,3 @@ Before public or financial-institution deployment, add a reviewed authentication
 - `public/index.html` — responsive application UI and client flows.
 - `pdf_extract.py` — bounded text extraction from PDF input using PyMuPDF.
 - `Dockerfile` — Node/Python container image for deployment.
-
