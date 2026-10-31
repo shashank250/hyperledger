@@ -25,7 +25,7 @@ const limits = new Map();
 const authAttempts = new Map();
 const demoAttempts = new Map();
 const scrypt = promisify(crypto.scrypt);
-const plans = { free: { name: 'Steady', price: 0, goals: 2, history: 3, scenarios: 2, transactions: 100, pdf: true }, plus: { name: 'Steady Plus', price: 5, goals: 8, history: 24, scenarios: 30, transactions: 2500, pdf: true }, complete: { name: 'Steady Complete', price: 10, goals: 25, history: 60, scenarios: 100, transactions: 10000, pdf: true } };
+const plans = { free: { name: 'Steady', price: 0, goals: 2, history: 3, scenarios: 2, transactions: 100, pdf: true }, plus: { name: 'Steady Plus', price: 99, goals: 8, history: 24, scenarios: 30, transactions: 2500, pdf: true }, complete: { name: 'Steady Complete', price: 199, goals: 25, history: 60, scenarios: 100, transactions: 10000, pdf: true } };
 const categories = ['Housing','Utilities','Groceries','Dining','Transport','Health','Education','Shopping','Subscriptions','Income','Transfer','Other'];
 const safeName = s => String(s || '').replace(/[<>\u0000-\u001f]/g,'').trim().slice(0,80);
 const merchantKey = s => String(s).toLowerCase().normalize('NFKD').replace(/[^a-z0-9 ]/g,'').replace(/\b(inc|llc|ltd|corp|com|payment|debit|credit|online|purchase)\b/g,'').replace(/\s+/g,' ').trim().slice(0,100) || 'unknown';
